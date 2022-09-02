@@ -1,0 +1,22 @@
+body {
+    height: 100%;
+    background-color: #080d0c !important;
+    color: white;
+    margin-top: 20px;
+}
+.form-control{
+    color: #00ff09;
+    background-color: #000;
+}
+.backColor {
+    background-color: #080d0c;
+}
+.Kool__Caption, .Kool__TrialMarkBox{
+    color: white !important;
+}
+
+.equations{
+    font-family: Avantgarde, TeX Gyre Adventor, URW Gothic L, sans-serif;
+    font-size: xxx-large;
+    text-align: center;
+}

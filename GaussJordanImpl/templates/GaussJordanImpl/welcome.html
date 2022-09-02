@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://www.koolchart.com/demo/LicenseKey/codepen/KoolChartLicense.js"></script>
+    <script src="https://www.koolchart.com/demo/KoolChart/JS/KoolChart.js"></script>
+    <link rel="stylesheet" href="https://www.koolchart.com/demo/KoolChart/Assets/Css/KoolChart.css"/>
+        <!-- Bootstrap core CSS -->
+    <script type="text/javascript" src="static/findCoefficients.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>Balancing Chemical equations using GJ</title>
+    <link rel="stylesheet" href="/static/theme.css">
+      <script>
+          var chartVars = "KoolOnLoadCallFunction=chartReadyHandler";
+
+// KoolChart.create("chart1", "chartHolder", chartVars, "100%", "100%");
+let chartData = [];
+function chartReadyHandler(id) {
+  document.getElementById(id).setLayout(layoutStr);
+  document.getElementById(id).setData(chartData);
+}
+var layoutStr =
+ '<KoolChart >'
+  +'<Options>'
+   +'<Caption text="Elemental and Compoud coefficients before and after balancing"/>'
+   +'<SubCaption text="Unit: 1" textAlign="right"/>'
+  +'</Options>'
+  +'<NumberFormatter id="fmt"/>'
+  +'<Column2DChart showDataTips="true" dataTipJsFunction="dataTipFunc">'
+   +'<horizontalAxis>'
+    +'<CategoryAxis id="hAxis" categoryField="cat"/>'
+   +'</horizontalAxis>'
+   +'<verticalAxis>'
+    +'<LinearAxis formatter="{fmt}" interval="1"/>'
+   +'</verticalAxis>'
+   +'<series>'
+    +'<Column2DSeries id="series1" minField="from" labelPosition="outside" insideLabelJsFunction="labelFunc" yField="to" fillJsFunction="fillFunc">'
+     +'<showDataEffect>'
+      +'<SeriesSlide direction="up" duration="1"/>'
+     +'</showDataEffect>'
+    +'</Column2DSeries>'
+   +'</series>'
+   +'<horizontalAxisRenderers>'
+    +'<Axis2DRenderer axis="{hAxis}" showLine="true" canDropLabels="false" fontFamily="Malgun Gothic"/>'
+   +'</horizontalAxisRenderers>'
+  +'</Column2DChart>'
+ +'</KoolChart>';
+
+
+
+
+
+function dataTipFunc(seriesId, seriesName, index, xName, yName, data, values) {
+ var fromVal = data['from'];
+ var toVal = data['to'];
+ var str = "";
+
+ if(index >=12)
+  str = values[0] + '<br/><font color="#ed3334"><b>' + insertComma(toVal) + ",000 </b></font> exceeded";
+ else{
+  str = values[0] + '<br/>Amount increased:  <font color="';
+  str += toVal - fromVal < 0 ? "#f71e1e" : "#63ea1e";
+  str += '"><b>' + insertComma((toVal - fromVal)) + ',</b></font>';
+ }
+ return str;
+}
+
+function fillFunc(seriesId, index, data, values) {
+ var fromVal = data.from;
+ var toVal = data.to;
+
+ if(index >=12)
+  return "#7b6651";
+ else if(fromVal < toVal)
+  return "#25bb06";
+ else
+  return "#e70f0f";
+}
+
+function labelFunc(seriesID, index, data, values) {
+ return insertComma(Number(data["to"]) - Number(data["from"]));
+}
+
+function insertComma(n) {
+  var reg = /(^[+-]?\d+)(\d{3})/;   // Regular expression
+  n+=""; //
+  while (reg.test(n))
+    n = n.replace(reg, '$1' + ',' + '$2');
+
+  return n;
+}
+      </script>
+    <script type="text/javascript" src="static/findCoefficients.js"></script>
+    <script>
+        function processData(){
+            var reactants = (document.getElementById('lhsChemFor').value).trim();
+            var products = (document.getElementById('rhsChemFor').value).trim();
+            document.getElementById('lhsChemFor').style.borderColor =(reactants.trim() === '')?"red":"white";
+            document.getElementById('rhsChemFor').style.borderColor =(products.trim() === '')?"red":"white";
+            if(reactants.trim() !== '' && products.trim() !==''
+            && !(reactants.includes(")") || products.includes(")")
+                    || products.includes("(") || reactants.includes("("))){
+                calculateElementCoefficients(reactants, products, submitPostData);
+            }else{
+                alert("Please provide valid input")
+            }
+        }
+
+        function submitPostData(globalElements, finalMatrix, columns){
+            let url = "/";
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", url);
+
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    renderOutput(xhr.status, xhr.responseText);
+            }};
+            xhr.send(JSON.stringify({
+                "allElements": Array.from(globalElements),
+                "matrix": finalMatrix,
+                "rows" : globalElements.size,
+                "columns" : columns
+            }));
+        }
+        function renderOutput(code, returnValue){
+            if(code === 200){
+                chartData = []
+                let values = returnValue.split(" ");
+                console.log(values);
+                let reactants = (document.getElementById('lhsChemFor').value).trim();
+                let products = (document.getElementById('rhsChemFor').value).trim();
+                document.getElementById("equation1").innerHTML = reactants + " --> " + products;
+                document.getElementById("showHideDiv").style.display = "block";
+                let i = 0;
+                let outputString = "";
+
+                reactants.split("+").forEach(function(compound){
+                    compound = compound.trim();
+                    let j =0;
+                    let tempNumber = compound[j];
+                    if(Number.isInteger(compound[j])){
+                        while(Number.isInteger(compound[j])){tempNumber+=compound[j];j++}
+                    }else{
+                        tempNumber = 1;
+                    }
+                    chartData.push({"cat": compound.trim(), "from":tempNumber, "to":values[i]})
+                    outputString = outputString +"("+values[i].toString().trim()+")"+compound.trim() + " + ";
+                    i++;
+                });
+                outputString = outputString.substr(0, outputString.length-2) + " --> "
+                products.split("+").forEach(function (compound){
+                    compound = compound.trim();
+                    let j =0;
+                    let tempNumber = compound[j];
+                    if(Number.isInteger(compound[j])){
+                        while(Number.isInteger(compound[j])){tempNumber+=compound[j];j++}
+                    }else{
+                        tempNumber = 1;
+                    }
+                    chartData.push({"cat": compound.trim(), "from":tempNumber, "to":values[i]})
+                    outputString = outputString +"("+values[i].toString().trim()+")"+compound.trim() + " + ";
+                    i++;
+                });
+                outputString = outputString.substr(0, outputString.length-2);
+                document.getElementById("equation2").innerHTML = outputString;
+
+                KoolChart.create("chart1", "chartHolder", chartVars, "100%", "100%");
+
+            }else{
+                document.getElementById("equation1").innerHTML = "Error occurred"
+            }
+        }
+    </script>
+</head>
+<body>
+<header class="p-3">
+      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <a class="navbar-brand" href="#">
+            Balancing Chemical equations using Gauss Jordan Elimination method
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav mr-auto">
+
+          </ul>
+{#            <button class="btn btn btn-primary my-2 my-sm-0" type="button">Search</button>#}
+        </div>
+      </nav>
+    </header>
+<div class="jumbotron backColor">
+        <div class="container">
+          <h1 class="display-3">Balancing Chemical Equations</h1>
+          <p>
+              Unbalanced Chemical Reactions? Worry not, this website will generate a balanced equation after a valid
+              chemical reaction is given as an input. It uses the Gauss-Jordan elimination method for finding out the
+              compound coefficients in order to balance out the whole equation.
+          </p>
+          <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more »</a></p>
+        </div>
+      </div>
+<div class="container" style="margin-top: 30px">
+    <p>
+        Linear  algebra  is  one  of  the  most  important  branch  of mathematics  which  nowadays  is
+        extensively  used  in  every field in life. One of the most important task in linear algebra is
+        solving  systems  of  linear  equations.  Generally  a  system of  linear  equations  is  converted
+        into  its  matrix  form  before solving  it  using  matrix  algebra.  Many  methods  exist
+        for solving a system of linear equations in matrix form. One such method is the Gauss Jordan
+        elimination method.The  Gauss  Jordan  elimination  method  is  an  extension  of the  Gaussian
+        elimination  method  of  solving  a  system  of linear  equations.  It  has  extensive  applications
+        in  many  fields like  science,  technology,  health,  finance  and  business.
+        GaussJordan  elimination  method  can  be  used  to  balance  chemical equations.
+        One  of  the  major  advantages  of  Gauss  Jordan elimination method over the Gaussian
+        elimination is that it can be  performed in parallel  on  several processors  at once.
+    </p>
+    <h4>Enter Unbalanced Chemical Reaction</h4>
+        <label for="lhsChemFor">Reactants</label>
+        <input type="text" class="form-control" id="lhsChemFor" aria-describedby="lhsHelp"
+               placeholder="E.g. NaOH + H2SO4" required>
+        <small id="lhsHelp" class="form-text text-muted">Please enter a valid chemical formula.</small>
+        <label for="rhsChemFor">Products</label>
+        <input type="text" class="form-control" id="rhsChemFor" aria-describedby="rhsHelp"
+               placeholder="E.g. Na2So4 + H2O" required>
+        <small id="rhsHelp" class="form-text text-muted">Please enter a valid chemical formula.</small>
+        <button style="margin-top: 20px" onclick="processData()" class="btn btn-success">Calculate Coefficients</button>
+
+    <div id="showHideDiv" style="display: none">
+        <div id="chartHolder" style="width:1000px; height:500px; margin-bottom: 80px">
+        <h4 style="margin-top: 20px">Elemental coefficients before balancing</h4>
+        </div>
+        <div id="testDiv">
+            <label for="equation1"><h1>Before balancing</h1></label>
+        <h4 id="equation1" style="color: red" class="equations" style="margin-top: 20px"></h4>
+        <label for="equation2"><h1>After balancing</h1></label>
+        <h4 class="equations" id="equation2" style="margin-top: 20px; color: #00ff09"></h4>
+        </div>
+    </div>
+<div style="margin-bottom: 100px"></div>
+
+    <nav class="navbar fixed-bottom navbar-expand-sm navbar-dark bg-dark">
+        <a class="navbar-brand">Authors</a>
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+        <a class="nav-link" href="#">Avinash Gaikwad <span class="sr-only">(current)</span></a>
+        </li>
+        </ul>
+        <span>Indian Institute Of Information Technology, Allahabad</span>
+    </nav>
+</div>
+</body>
+</html>
