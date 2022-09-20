@@ -10,4 +10,4 @@ This web application will generate a balanced equation after a valid chemical re
 ### Look and feel of the website
 ![MainPage](./images/mainPage.png)
 ### Balanced equations output
-![ResultsPage](./images/result.png)
+![ResultsPage](./images/resultPage.png)
